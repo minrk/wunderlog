@@ -4,7 +4,6 @@ Collect observations and forecast data from Weather Underground
 """
 
 from datetime import date, datetime, timedelta, timezone
-import dateutil
 import json
 from netrc import netrc
 from pathlib import Path
