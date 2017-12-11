@@ -76,6 +76,7 @@ class Wunderlog():
         Checks for errors and returns JSON response"""
         path = path.strip('/')
         url = f'{WUNDERGROUND_API}/{self.api_key}/{path}/q/{self.location}.json'
+        print(f"Fetching {url.replace(self.api_key, '{key}')}")
         r = self.session.get(url)
         r.raise_for_status()
         body = r.json()
