@@ -110,7 +110,7 @@ class Wunderlog():
         # this is local time for the weather location
         doc = ET.fromstring(r.text)
         timestamp = doc.find('.meta/lastupdate').text
-        with open(yr.joinpath(f"{timestamp}.xml"), 'wb') as f:
+        with open(yr.joinpath(f"{timestamp.replace(':', '-')}.xml"), 'wb') as f:
             f.write(r.content)
 
     def get_day(self, day=None):
