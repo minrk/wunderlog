@@ -8,6 +8,7 @@ import json
 from netrc import netrc
 from pathlib import Path
 import os
+import xml.etree.ElementTree as ET
 
 from requests_cache import CachedSession
 
@@ -51,11 +52,12 @@ class Wunderlog():
     location should be a weather underground location, e.g. 'Norway/Asker'
     """
 
-    def __init__(self, location, api_key=None, directory='.', cache_kwargs=None):
+    def __init__(self, location, yr_location=None, api_key=None, directory='.', cache_kwargs=None):
         if api_key is None:
             api_key = netrc().authenticators('api.wunderground.com')[2]
         self.api_key = api_key
         self.location = location
+        self.yr_location = yr_location
         self.directory = Path(directory)
         self.loc_dir = self.directory.joinpath(self.location.lower())
         ensure_dir_exists(self.loc_dir)
@@ -97,6 +99,19 @@ class Wunderlog():
             hour=int(date['hour']),
             minute=int(date['min']),
         )
+
+    def get_yr(self):
+        yr = self.loc_dir.joinpath('yr')
+        ensure_dir_exists(yr)
+        url = f"https://www.yr.no/place/{self.yr_location}/forecast_hour_by_hour.xml"
+        print(f"Fetching {url}")
+        r = self.session.get(url)
+        r.raise_for_status()
+        # this is local time for the weather location
+        doc = ET.fromstring(r.text)
+        timestamp = doc.find('.meta/lastupdate').text
+        with open(yr.joinpath(f"{timestamp}.xml"), 'wb') as f:
+            f.write(r.content)
 
     def get_day(self, day=None):
         """Download daily observation data"""
@@ -172,13 +187,16 @@ class Wunderlog():
         self.get_day()
         self.get_forecast('daily')
         self.get_forecast('hourly')
+        if self.yr_location is not None:
+            self.get_yr()
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('location', help="The location, e.g. Norway/Asker")
+    parser.add_argument('location', help="The location on weather underground, e.g. Norway/Asker")
+    parser.add_argument('yr', default=None, help="The location on yr.no, e.g. Norway/Akershus/Asker/Asker")
     # add args for data-dir, etc.
     opts = parser.parse_args()
-    W = Wunderlog(opts.location)
+    W = Wunderlog(opts.location, opts.yr)
     W.collect()
